@@ -1,0 +1,9 @@
+<html>
+  <script src="https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.js"></script>
+
+  <script>
+    const { ajax } = rxjs.ajax;
+    const obs$ = ajax(`http://127.0.0.1:3000/people/1`);
+    obs$.subscribe((result) => console.log(result.response));
+  </script>
+</html>
