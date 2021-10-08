@@ -1,0 +1,82 @@
+<html>
+  <script src="https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.js"></script>
+
+  <script>
+    const { range, interval, fromEvent } = rxjs;
+    const { takeLast, take, filter, pluck } = rxjs.operators;
+
+    range(1, 20).pipe(take(5)).subscribe(console.log);
+
+    interval(1000)
+      .pipe(take(5))
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      );
+
+    fromEvent(document, "click")
+      .pipe(take(5), pluck("x"))
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      );
+
+    interval(1000)
+      .pipe(takeLast(5)) //interval이 끝나지 않으므로 나오지않음
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      );
+
+    interval(1000)
+      .pipe(take(10), takeLast(5)) //10초 뒤에 5,6,7,8,9
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      );
+
+    //click도 마찬가지로 take을 먼저해야 complete가 나고, takelast를 쓸 수있다.
+    fromEvent(document, "click")
+      .pipe(take(10), takeLast(5), pluck("x"))
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      );
+
+    //takewhile (조건을 충족시키지 않은 값이 나오면 complete)
+    const { takeWhile } = rxjs.operators;
+
+    range(1, 20)
+      .pipe(takeWhile((x) => x <= 10))
+      .subscribe(console.log);
+
+    //takeUntil (인자로 또다른 observable을 받는다.
+    //인자로 받은 stream이 첫 번째 값을 발행할때만)
+
+    obs1$ = interval(1000);
+    obs2$ = fromEvent(document, "click");
+
+    obs1$.pipe(takeUntil(obs2$)).subscribe(
+      console.log,
+      (err) => console.error(err),
+      (_) => console.log("COMPLETE")
+    ); //obs2$가 발행할 때 까지만 발행한다.
+
+    //예시 -> ajax요청 결과가 도착할때까지 특정 행위를 할수있다.
+    interval(50)
+      .pipe(
+        takeUntil(
+          ajax("http://127.0.0.1:3000/people/name/random").pipe(
+            pluck("response"),
+            tap(console.log)
+          )
+        )
+      )
+      .subscribe(console.log);
+  </script>
+</html>

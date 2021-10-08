@@ -1,0 +1,47 @@
+<html>
+  <script src="https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.js"></script>
+
+  <script>
+    const { range, interval, fromEvent } = rxjs;
+    const { skip, filter, pluck, skipLast, skipwhile, skipUntil } =
+      rxjs.operators;
+
+    //5번의 click event를 skip
+    fromEvent(document, "click")
+      .pipe(skip(5), pluck("x"))
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      );
+
+    //뒤에서부터 N개 건너뛰기
+    range(1, 20).pipe(skipLast(5)).subscribe(console.log);
+
+    //skipLast는 조금은 직관적이지 않다.
+    //오류가 나지 않음. 처음 5개의 발행물이 생길때 까지 대기
+    //그 이후에 첫번째 발행물부터 발행 (뒤에서 5개가 제외된 상태 )
+    interval(1000)
+      .pipe(skipLast(5))
+      .subscribe(
+        console.log,
+        (err) => console.error(err),
+        (_) => console.log("COMPLETE")
+      ); //5초후에 0부터 출력 (5회 이전값들부터 나온다)
+
+    //skipWhile : ~하는 동안 건너뛰기
+    range(1, 20)
+      .pipe(skipWhile((x) => x <= 10))
+      .subscribe(console.log);
+
+    //skipUntil : skipUntil : 기준이 되는 스트림이 발행하고부터
+    const obs1$ = fromEvent(document, "click");
+    const obs2$ = timer(5000);
+
+    obs1$.pipe(pluck("x"), skipUntil(obs2$)).subscribe(
+      console.log,
+      (err) => console.error(err),
+      (_) => console.log("COMPLETE")
+    ); //5초 이후부터 click이벤트에 대해서 발행된다.
+  </script>
+</html>
