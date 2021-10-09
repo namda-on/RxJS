@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+  </head>
+  <body>
+    <input id="keyword" type="text" />
+    <br />
+    <div id="result"></div>
+  </body>
+
+  <script src="https://unpkg.com/@reactivex/rxjs/dist/global/rxjs.umd.js"></script>
+  <script>
+    const { fromEvent, from, merge } = rxjs;
+    const { ajax } = rxjs.ajax;
+    const {
+      mergeMap,
+      switchMap,
+      pluck,
+      retry,
+      map,
+      filter,
+      debounceTime,
+      distinctUntilChanged,
+      mapTo,
+      scan,
+    } = rxjs.operators;
+
+    const url = "http://127.0.0.1:3000/people/quarter-error";
+    const keyword = document.querySelector("#keyword");
+    const result = document.querySelector("#result");
+
+    const showResults = (results) => {
+      from(results)
+        .pipe(
+          map((person) => `${person.first_name} ${person.last_name}`),
+          map((name) => `<article>${name}</article>`),
+          scan((acc, article) => (acc += article), "")
+        )
+        .subscribe((people) => (result.innerHTML = people));
+    };
+
+    /*
+    fromEvent(keyword, "keyup")
+      .pipe(
+        pluck("target", "value"),
+        mergeMap((keyword) => ajax(`${url}?name=${keyword}`).pipe(retry(3))), //문제 실제로 요청을 keyup마다 보낸다.
+        pluck("response")
+      )
+      .subscribe(showResults);
+    */
+
+    //switch map -> 이전 스트림을 중단한다.
+    // fromEvent(keyword, "keyup")
+    //   .pipe(
+    //     pluck("target", "value"),
+    //     // meregeMap 대신 switchMap 사용
+    //     switchMap((keyword) => ajax(`${url}?name=${keyword}`).pipe(retry(3))),
+    //     pluck("response")
+    //   )
+    //   .subscribe(showResults);
+    //switchMap에 의해 요청이 취소 되긴했지만, 불필요한 요청들이 실행됨
+
+    //*************debounceTime***************
+
+    fromEvent(keyword, "keyup")
+      .pipe(
+        filter((event) => event.code != "Backspace"), // 백스페이스 생략
+        pluck("target", "value"),
+        filter((typed) => typed.length > 1), // 1글자 이상일 때만
+        debounceTime(500), // 0.5초 공백 후 발행
+        distinctUntilChanged(), // 연속된 같은 문자열 생략
+        switchMap((keyword) => ajax(`${url}?name=${keyword}`).pipe(retry(3))),
+        pluck("response")
+      )
+      .subscribe(showResults);
+  </script>
+</html>
